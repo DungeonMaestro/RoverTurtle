@@ -9,12 +9,12 @@ from RoverTurtle.Exceptions import *
 from RoverTurtle.Exceptions import FleetError, NavigationError
 
 
-def bounded(arg, val_range):
-    if arg < min(val_range):
-        return min(val_range)
-    if arg > max(val_range):
-        return max(val_range)
-    return arg
+def back_if_too_far(arg, max):
+    if arg < 0:
+        return 0
+    if arg < max:
+        return arg
+    return max
 
 
 # ----------------------- #
@@ -32,7 +32,7 @@ class Mission:
         self.range_y = range_y
 
     def deploy_rover(self, o, x, y):
-        self.rovers.append(Rover(o, bounded(x, range(self.range_x)), bounded(y, range(self.range_y)), self))
+        self.rovers.append(Rover(o, back_if_too_far(x, self.range_x), back_if_too_far(y, self.range_y), self))
         print(self)
 
     def get_boundaries(self):
@@ -68,9 +68,9 @@ class Mission:
             2: '<',
             3: 'V'
         }
-        grid = [['~' for _ in range(self.range_x)] for __ in range(self.range_y)]
+        grid = [['~' for _ in range(max(self.range_x, 1))] for __ in range(max(self.range_y, 1))]
         for index, rover in enumerate(self.rovers):
-            orientation, x, y = self.locate(index)
+            x, y, orientation = self.locate(index)
 
             if grid[y][x] == '~':
                 grid[y][x] = f"{index}{avatar[orientation]}"
@@ -104,10 +104,10 @@ class Mission:
             raise CommunicationError(f"If you want Rover {rover_id} to do something, you need to use your text words")
 
     def validate_mission_control(self, range_x, range_y):
-        fail_test = {'range_x': range_x <= 0, 'range_y': range_y <= 0}
+        fail_test = {'range_x': range_x < 0, 'range_y': range_y < 0}
         if any(fail_test.values()):
-            raise SpaceError(f"Non-positive space detected. {', '.join(rng for rng in fail_test if fail_test[rng])} "
-                             f"must be positive")
+            raise SpaceError(f"negative space detected. {', '.join(rng for rng in fail_test if fail_test[rng])} "
+                             f"must be non-negative")
 
 
 class Rover:
@@ -145,14 +145,11 @@ class Rover:
 
     def move(self):
         range_x, range_y = self.mission.get_boundaries()
-        x_step = bounded(self.x + round(cos(2 * self.orientation * pi / len(self.ORIENTATIONS))), (0, range_x - 1))
-        y_step = bounded(self.y + round(sin(2 * self.orientation * pi / len(self.ORIENTATIONS))), (0, range_y - 1))
-        if (0, 0) != (x_step, y_step):
-            self.x += x_step
-            self.y += y_step
+        self.x = back_if_too_far(self.x + round(cos(2 * self.orientation * pi / len(self.ORIENTATIONS))), range_x)
+        self.y = back_if_too_far(self.y + round(sin(2 * self.orientation * pi / len(self.ORIENTATIONS))), range_y)
 
     def get_location(self):
-        return self.orientation, self.x, self.y
+        return self.x, self.y, self.orientation
 
 ##################
 # Manual Testing #
@@ -167,7 +164,7 @@ class Playground:
         ry = randint(1, 20 - 2 * rvr_c)
         mc = Mission(rx, ry)
         for i in range(rvr_c):
-            mc.rovers.append(Rover(randint(0, rx - 1), randint(0, ry - 1), randint(0, 3)))
+            mc.rovers.append(Rover(randint(0, rx - 1), randint(0, ry - 1), randint(0, 3), mc))
         print(mc)
         return mc
 
@@ -185,4 +182,4 @@ class Playground:
         print(history)
 
 
-mc = Playground.rand_scene()
+# mc = Playground.rand_scene()
