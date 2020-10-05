@@ -105,7 +105,7 @@ class Orientation:
         Assembles the orientation structure based on the passed coordinate system. Also takes arguments for radial
         span and data validation. The orientation 'axes' are based on planes of two dimensions, separated by an
         underscore. This is intuitive in
-        rectilinear space, but kinda mindfucky when you get into weirder systems
+        rectilinear space, but kinda mindfucky when you get into less common systems
 
         e.g. Orientation(system=Rectangular, data_validator=(lambda a: pi / 2) x_y=pi)) would result in an actor that
         can only look along the positive y axis, and whose initial negative x-axis orientation would be validated
@@ -162,6 +162,7 @@ class NavSystem:
     # TODO: o boi this gon' hurt
     def move(self, dist):
         setattr(self.pos, self.pos.__slots__[0], )
+        #TODO: fix calculation to not assume range is τ
         self.pos.x = bounded(self.pos.x + round(dist * sin(2 * pi / self.orientation)), self.pos.sys.range_x)
         self.pos.y = bounded(self.pos.y + round(dist * cos(2 * pi / self.orientation)), self.pos.sys.range_y)
 
